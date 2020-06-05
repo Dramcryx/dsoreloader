@@ -23,21 +23,24 @@ public:
 
     std::map<std::string, void *> availableFuncs() const;
 
+    // if void, don't return anything
     template<typename Func, typename ... Args>
-    typename std::enable_if<std::is_void<typename std::result_of<Func(Args...)>::type>::value, void>::type invoke(const char * fn_name, Args &&... args)
+    typename std::enable_if<std::is_void<std::invoke_result_t<Func, Args...>>::value, void>::type
+    invoke(const char * fn_name, Args &&... args)
     {
         std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
         Func callee = (Func)(m_funcs.at(fn_name));
         callee(args...);
     }
 
+    // if not void, return invoke result
     template<typename Func, typename ... Args>
-    typename std::enable_if<!std::is_void<typename std::result_of<Func(Args...)>::type>::value,
-                            typename std::result_of<Func(Args...)>::type>::type invoke(const char * fn_name, Args &&... args)
+    typename std::enable_if<!std::is_void<std::invoke_result_t<Func, Args...>>::value,
+                            std::invoke_result_t<Func, Args...>>::type
+    invoke(const char * fn_name, Args &&... args)
     {
         std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
-        Func callee = (Func)(m_funcs[fn_name]);
-        return callee(args...);
+        return ((Func)(m_funcs[fn_name]))(args...);
     }
 
 private:
