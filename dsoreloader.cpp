@@ -2,24 +2,32 @@
 
 #include <dlfcn.h>
 #include <link.h>
+#include <sys/stat.h>
 
 #include <thread>
 
+using stat_t = struct stat;
+
 DSOReloader::DSOReloader(const std::string &filename):
     m_name(filename),
-    m_file_time(std::filesystem::last_write_time(
-                    std::filesystem::path(filename)))
+    m_file_time([&](stat_t filestat)
+    {
+            stat(m_name.c_str(), &filestat);
+            return filestat.st_mtime;
+    }(stat_t{}))
 {
     this->load();
     std::thread([this]()
     {
         while (true)
         {
-            auto new_time = std::filesystem::last_write_time(std::filesystem::path(m_name));
-            if (new_time != m_file_time)
+            stat_t filestat;
+            stat(m_name.c_str(), &filestat);
+
+            if (filestat.st_mtime != m_file_time)
             {
                 onFileChanged(m_name);
-                m_file_time = new_time;
+                m_file_time = filestat.st_mtime;
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }

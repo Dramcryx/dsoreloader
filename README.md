@@ -1,5 +1,5 @@
 # dsoreloader
-(C++17) Dynamic linking of Linux shared objects with reloading on it's change
+(C++11) Dynamic linking of Linux shared objects with reloading on it's change
 
 Imagine you have a shared object that you would wish to hotswap without rebuilding or relaunching your app (i.e. you changed 2-3 lines of method).
 

@@ -8,6 +8,10 @@
 #include <filesystem>
 #include <mutex>
 
+#include <ctime>
+
+template< class T >
+using result_of_t = typename std::result_of<T>::type;
 
 class DSOReloader
 {
@@ -25,7 +29,7 @@ public:
 
     // if void, don't return anything
     template<typename Func, typename ... Args>
-    typename std::enable_if<std::is_void<std::invoke_result_t<Func, Args...>>::value, void>::type
+    typename std::enable_if<std::is_void<result_of_t<Func(Args...)>>::value, void>::type
     invoke(const char * fn_name, Args &&... args)
     {
         std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
@@ -35,8 +39,8 @@ public:
 
     // if not void, return invoke result
     template<typename Func, typename ... Args>
-    typename std::enable_if<!std::is_void<std::invoke_result_t<Func, Args...>>::value,
-                            std::invoke_result_t<Func, Args...>>::type
+    typename std::enable_if<!std::is_void<result_of_t<Func(Args...)>>::value,
+                            result_of_t<Func(Args...)>>::type
     invoke(const char * fn_name, Args &&... args)
     {
         std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
@@ -48,7 +52,7 @@ private:
     void * m_dl_handle = nullptr;
     std::map<std::string, void *> m_funcs;
 
-    std::filesystem::file_time_type m_file_time;
+    time_t m_file_time;
 
     std::map<std::string, std::unique_ptr<std::mutex>> m_lockers;
 
