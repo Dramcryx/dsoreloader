@@ -8,6 +8,8 @@
 
 #include <ctime>
 
+#include "shared_lock_guard.h"
+
 template< class T >
 using result_of_t = typename std::result_of<T>::type;
 
@@ -30,7 +32,8 @@ public:
     typename std::enable_if<std::is_void<result_of_t<Func(Args...)>>::value, void>::type
     invoke(const char * fn_name, Args &&... args)
     {
-        std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
+        shared_lock_guard<shared_mutex> lk(*m_lockers[fn_name]);
+        //std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
         ((Func)(m_funcs.at(fn_name)))(args...);
     }
 
@@ -40,7 +43,8 @@ public:
                             result_of_t<Func(Args...)>>::type
     invoke(const char * fn_name, Args &&... args)
     {
-        std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
+        shared_lock_guard<shared_mutex> lk(*m_lockers[fn_name]);
+        //std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
         return ((Func)(m_funcs[fn_name]))(args...);
     }
 
@@ -52,7 +56,7 @@ private:
     // extracted function pointers
     std::map<std::string, void *> m_funcs;
     // mutexes needed for safe reload
-    std::map<std::string, std::unique_ptr<std::mutex>> m_lockers;
+    std::map<std::string, std::unique_ptr<shared_mutex>> m_lockers;
 
     // background thread handle
     std::thread m_bckgrnd;

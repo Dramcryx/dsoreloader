@@ -92,7 +92,7 @@ bool DSOReloader::load()
             {
                 if (m_lockers.find(&strtab[sym->st_name]) == m_lockers.end())
                 {
-                    m_lockers[&strtab[sym->st_name]].reset(new std::mutex{});
+                    m_lockers[&strtab[sym->st_name]].reset(new shared_mutex{});
                 }
                 m_funcs[&strtab[sym->st_name]] = getFunc(&strtab[sym->st_name]);
             }
@@ -105,10 +105,10 @@ void DSOReloader::onFileChanged(const std::string &path)
 {
     if (path.find(m_name) != path.npos)
     {
-        std::vector<std::unique_ptr<std::lock_guard<std::mutex>>> lockers;
+        std::vector<std::unique_ptr<std::lock_guard<shared_mutex>>> lockers;
         for (auto & i: m_lockers)
         {
-            lockers.emplace_back(new std::lock_guard<std::mutex>(*i.second));
+            lockers.emplace_back(new std::lock_guard<shared_mutex>(*i.second));
         }
         dlclose(m_dl_handle);
         m_dl_handle = nullptr;
