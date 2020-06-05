@@ -1,10 +1,11 @@
 #include "dsoreloader.h"
 
+#include <vector>
+#include <memory>
+
 #include <dlfcn.h>
 #include <link.h>
 #include <sys/stat.h>
-
-#include <thread>
 
 using stat_t = struct stat;
 
@@ -17,9 +18,9 @@ DSOReloader::DSOReloader(const std::string &filename):
     }(stat_t{}))
 {
     this->load();
-    std::thread([this]()
+    m_bckgrnd = std::thread([this]()
     {
-        while (true)
+        while (!shutdown)
         {
             stat_t filestat;
             stat(m_name.c_str(), &filestat);
@@ -31,11 +32,13 @@ DSOReloader::DSOReloader(const std::string &filename):
             }
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-    }).detach();
+    });
 }
 
 DSOReloader::~DSOReloader()
 {
+    shutdown = true;
+    m_bckgrnd.join();
     dlclose(m_dl_handle);
 }
 

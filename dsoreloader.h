@@ -2,10 +2,8 @@
 #define DSORELOADER_H
 
 #include <map>
-#include <memory>
 #include <type_traits>
-#include <vector>
-#include <filesystem>
+#include <thread>
 #include <mutex>
 
 #include <ctime>
@@ -47,13 +45,23 @@ public:
     }
 
 private:
+    // filename
     std::string m_name;
+    // file handle
     void * m_dl_handle = nullptr;
+    // extracted function pointers
     std::map<std::string, void *> m_funcs;
-
-    time_t m_file_time;
-
+    // mutexes needed for safe reload
     std::map<std::string, std::unique_ptr<std::mutex>> m_lockers;
+
+    // background thread handle
+    std::thread m_bckgrnd;
+
+    // flag to stop background thread working on destruction
+    bool shutdown = false;
+
+    // latest modification time
+    time_t m_file_time;
 
     bool load();
 
