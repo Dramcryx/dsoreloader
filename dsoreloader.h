@@ -33,8 +33,7 @@ public:
     invoke(const char * fn_name, Args &&... args)
     {
         std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
-        Func callee = (Func)(m_funcs.at(fn_name));
-        callee(args...);
+        ((Func)(m_funcs.at(fn_name)))(args...);
     }
 
     // if not void, return invoke result
