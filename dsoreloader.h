@@ -32,8 +32,7 @@ public:
     typename std::enable_if<std::is_void<result_of_t<Func(Args...)>>::value, void>::type
     invoke(const char * fn_name, Args &&... args)
     {
-        shared_lock_guard<shared_mutex> lk(*m_lockers[fn_name]);
-        //std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
+        shared_lock_guard<shared_mutex> lk(m_lock);
         ((Func)(m_funcs.at(fn_name)))(args...);
     }
 
@@ -43,8 +42,7 @@ public:
                             result_of_t<Func(Args...)>>::type
     invoke(const char * fn_name, Args &&... args)
     {
-        shared_lock_guard<shared_mutex> lk(*m_lockers[fn_name]);
-        //std::lock_guard<std::mutex> lk(*m_lockers[fn_name]);
+        shared_lock_guard<shared_mutex> lk(m_lock);
         return ((Func)(m_funcs[fn_name]))(args...);
     }
 
@@ -55,8 +53,8 @@ private:
     void * m_dl_handle = nullptr;
     // extracted function pointers
     std::map<std::string, void *> m_funcs;
-    // mutexes needed for safe reload
-    std::map<std::string, std::unique_ptr<shared_mutex>> m_lockers;
+    // mutex needed for safe reload
+    shared_mutex m_lock;
 
     // background thread handle
     std::thread m_bckgrnd;
